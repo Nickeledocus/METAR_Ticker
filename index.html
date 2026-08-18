@@ -102,10 +102,11 @@
   /* ---- De rijen per luchthaven ------------------------------------------- */
   .rows { margin: 14px 0 6px; }
   .row {
-    display: grid;
-    grid-template-columns: auto 1fr;
+    display: flex;
+    flex-wrap: wrap;            /* lange waarde mag naar een eigen regel zakken */
     align-items: baseline;
-    gap: 4px 14px;
+    column-gap: 14px;
+    row-gap: 4px;
     padding: 14px 6px;
     border-bottom: 1px solid var(--line);
   }
@@ -128,12 +129,14 @@
   }
   .code { font-family: var(--mono); font-size: 12px; color: var(--dim); }
   .value {
-    grid-column: 2;
+    flex: 0 1 auto;           /* past zich aan de tekstlengte aan            */
+    min-width: 0;
+    margin-left: auto;        /* korte waarde blijft netjes tegen de rechterrand */
     font-family: var(--mono);
     font-size: clamp(17px, 5vw, 26px);
     color: var(--ink);
-    text-align: right;
-    word-break: break-word;
+    text-align: left;         /* lange, afgebroken tekst leest van links af  */
+    overflow-wrap: break-word;
   }
   .value.empty { color: var(--dim); }
 

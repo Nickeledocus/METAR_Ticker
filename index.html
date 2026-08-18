@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>METAR Ticker</title>
+
+<!-- Zorgt dat 'Toevoegen aan startscherm' een schermvullende app-look geeft -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0e17">
+
+<!-- App-onderdelen: paspoort (manifest) en icoon voor het startscherm -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<style>
+  /* ==========================================================================
+     KLEUR & TYPE  -  het "vertrekbord bij nacht"
+     ========================================================================== */
+  :root {
+    --bg:      #0a0e17;   /* inkt-blauw, als een instrumentenpaneel in het donker */
+    --panel:   #111826;
+    --ink:     #e8ebf2;   /* verlicht, gebroken wit */
+    --dim:     #6b7690;   /* gedempt leislaag-grijs voor bijzaken */
+    --amber:   #f4b350;   /* approach-light amber, het accent */
+    --line:    #1e2740;
+
+    /* Officiële METAR-vliegconditiekleuren (van goed naar slecht) */
+    --vfr:  #3ecf8e;   /* Visual Flight Rules      - ruim zicht        */
+    --mvfr: #4aa8ff;   /* Marginal VFR             - matig             */
+    --ifr:  #ff5c6c;   /* Instrument Flight Rules  - slecht            */
+    --lifr: #d17bff;   /* Low IFR                  - zeer slecht       */
+
+    --mono: 'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --sans: ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    /* subtiele gloed bovenaan, als het schijnsel van een display */
+    background-image: radial-gradient(120% 60% at 50% -10%, #16203a 0%, transparent 60%);
+    display: flex;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    cursor: pointer;                 /* tikken = volgende onderwerp */
+  }
+
+  .board {
+    width: 100%;
+    max-width: 760px;
+    align-self: center;
+    padding: 8px 4px;
+  }
+
+  /* ---- Kop: welk onderwerp staat er nu, plus de klok ---------------------- */
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 6px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .34em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+  .clock { font-family: var(--mono); font-size: 13px; color: var(--dim); }
+  .subject {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: clamp(30px, 9vw, 56px);
+    line-height: 1;
+    color: var(--amber);
+    letter-spacing: .02em;
+    margin-top: 4px;
+  }
+
+  /* ---- Voortgangsstreep: loopt vol tot het volgende onderwerp ------------- */
+  .progress { height: 2px; background: var(--line); margin: 0 6px; overflow: hidden; }
+  .progress > span {
+    display: block; height: 100%; width: 0;
+    background: var(--amber);
+    transform-origin: left;
+  }
+  .progress.run > span { width: 100%; transition: width linear; }
+
+  /* ---- De rijen per luchthaven ------------------------------------------- */
+  .rows { margin: 14px 0 6px; }
+  .row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 4px 14px;
+    padding: 14px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .who { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--dim);
+    flex: none;
+    align-self: center;
+    box-shadow: 0 0 8px currentColor;
+    color: var(--dim);
+  }
+  .name {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: clamp(15px, 4.4vw, 20px);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .code { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+  .value {
+    grid-column: 2;
+    font-family: var(--mono);
+    font-size: clamp(17px, 5vw, 26px);
+    color: var(--ink);
+    text-align: right;
+    word-break: break-word;
+  }
+  .value.empty { color: var(--dim); }
+
+  /* ---- Voet: bron en laatste verversing ---------------------------------- */
+  .foot {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 12px 6px 0;
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+  }
+  .foot .err { color: var(--ifr); }
+
+  /* ---- Het "omklappen" bij een nieuw onderwerp (de signatuur) ------------- */
+  @keyframes flip {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .flip .subject,
+  .flip .value { animation: flip .28s ease both; }
+  .flip .row:nth-child(2) .value { animation-delay: .04s; }
+  .flip .row:nth-child(3) .value { animation-delay: .08s; }
+  .flip .row:nth-child(4) .value { animation-delay: .12s; }
+  .flip .row:nth-child(5) .value { animation-delay: .16s; }
+  .flip .row:nth-child(6) .value { animation-delay: .20s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flip .subject, .flip .value { animation: none; }
+    .progress.run > span { transition: none; width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <main class="board" id="board">
+    <div class="head">
+      <div>
+        <div class="eyebrow">METAR</div>
+        <div class="subject" id="subject">verbinden</div>
+      </div>
+      <div class="clock" id="clock">--:--Z</div>
+    </div>
+    <div class="progress" id="progress"><span></span></div>
+    <div class="rows" id="rows"></div>
+    <div class="foot">
+      <span id="status">bezig met ophalen...</span>
+      <span>aviationweather.gov</span>
+    </div>
+  </main>
+
+<script>
+/* ============================================================================
+   INSTELLINGEN  -  hier pas je alles aan
+   ============================================================================ */
+const AIRPORTS = [
+  { name: 'Rotterdam', icao: 'EHRD' },
+  { name: 'Amsterdam', icao: 'EHAM' },
+  { name: 'Eindhoven', icao: 'EHEH' },
+  { name: 'Lelystad', icao: 'EHLE' },
+  { name: 'Maastricht', icao: 'EHBK' },
+  // Regeltje bijplakken = luchthaven erbij. EHGG = Groningen, EHBK = Maastricht.
+];
+
+const SUBJECTS = ['Wind', 'Zicht', 'Weer', 'Bewolking', 'Temp/dauw', 'Luchtdruk'];
+const SECONDS_PER_SUBJECT = 15;    // hoe lang elk onderwerp in beeld blijft
+const REFRESH_MINUTES     = 10;   // hoe vaak nieuwe data wordt opgehaald
+
+/* De weerbron staat CORS niet toe (zie uitleg), dus we halen 'm via een
+   doorgeef-luik op. Leeg maken ( [] ) als je een bron gebruikt die het wél
+   toestaat, of als je zelf een proxy draait. Meerdere = vangnet: valt de
+   eerste weg, dan pakt-ie automatisch de volgende. */
+const PROXIES = [
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+];
+
+/* ============================================================================
+   VERTAAL-TABELLEN  (zelfde logica als de PowerShell-versie)
+   ============================================================================ */
+const cloudAmounts = { FEW:'licht bewolkt', SCT:'half bewolkt', BKN:'zwaar bewolkt', OVC:'geheel bewolkt' };
+const wxDescriptor = { MI:'ondiepe', BC:'flarden', DR:'opwaaiende', BL:'opgejaagde', SH:'buien', TS:'onweer met', FZ:'onderkoelde' };
+const wxPhenomena  = { DZ:'motregen', RA:'regen', SN:'sneeuw', SG:'motsneeuw', PL:'ijsregen', GR:'hagel', GS:'korrelhagel',
+                       IC:'ijskristallen', BR:'mist', FG:'dichte mist', FU:'rook', VA:'vulkanische as', DU:'stof', SA:'zand',
+                       HZ:'nevel', PO:'stofhozen', SQ:'windstoten', FC:'windhoos', SS:'zandstorm', DS:'stofstorm' };
+
+function translateWeather(code) {
+  let prefix = '';
+  if      (code.startsWith('+'))  { prefix = 'zware ';          code = code.slice(1); }
+  else if (code.startsWith('-'))  { prefix = 'lichte ';         code = code.slice(1); }
+  else if (code.startsWith('VC')) { prefix = 'in de omgeving '; code = code.slice(2); }
+  const parts = [];
+  for (let i = 0; i < code.length; i += 2) {
+    const chunk = code.substr(i, 2);
+    if      (wxDescriptor[chunk]) parts.push(wxDescriptor[chunk]);
+    else if (wxPhenomena[chunk])  parts.push(wxPhenomena[chunk]);
+    else                          parts.push(chunk);
+  }
+  return (prefix + parts.join(' ')).trim();
+}
+
+/* Zet één ruwe METAR-regel om naar een bordje: onderwerp -> tekst,
+   plus een grove vliegconditie voor het statusbolletje. */
+function parseMetar(raw) {
+  const r = { Wind:'-', Zicht:'-', Weer:'geen bijzonderheden', Bewolking:'-', 'Temp/dauw':'-', Luchtdruk:'-' };
+  let tokens = raw.trim().split(/\s+/);
+  if (tokens[0] === 'METAR' || tokens[0] === 'SPECI') tokens = tokens.slice(1);
+
+  const clouds = [], weather = [];
+  let visM = null;          // zicht in meters, voor de conditie-inschatting
+  let ceilFt = Infinity;    // laagste "gesloten" wolkendek in voet
+
+  for (const t of tokens) {
+    let m;
+    if (m = t.match(/^(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?(KT|MPS)$/)) {          // wind
+      const dir = m[1], spd = parseInt(m[2], 10);
+      const gust = m[4] ? `, uitschieters ${parseInt(m[4], 10)}` : '';
+      if      (t === '00000KT') r.Wind = 'windstil';
+      else if (dir === 'VRB')   r.Wind = `variabel, ${spd} kt${gust}`;
+      else                      r.Wind = `uit ${dir}\u00B0, ${spd} kt${gust}`;
+    }
+    else if (t === 'CAVOK') { r.Zicht = '10 km+ (CAVOK)'; clouds.push('onbewolkt'); visM = 10000; }
+    else if (m = t.match(/^(\d{4})$/)) {                                       // zicht
+      if (t === '9999') { r.Zicht = '10 km of meer'; visM = 10000; }
+      else              { r.Zicht = `${parseInt(t, 10)} m`; visM = parseInt(t, 10); }
+    }
+    else if (m = t.match(/^(FEW|SCT|BKN|OVC)(\d{3})(CB|TCU)?$/)) {             // bewolking
+      const x = m[3] === 'CB' ? ' (onweer)' : m[3] === 'TCU' ? ' (buienopbouw)' : '';
+      const ft = parseInt(m[2], 10) * 100;
+      clouds.push(`${cloudAmounts[m[1]]} op ${ft} ft${x}`);
+      if ((m[1] === 'BKN' || m[1] === 'OVC') && ft < ceilFt) ceilFt = ft;      // alleen dicht dek telt als "plafond"
+    }
+    else if (/^(NSC|NCD|SKC|CLR)$/.test(t)) { clouds.push('geen relevante bewolking'); }
+    else if (m = t.match(/^(M?\d{2})\/(M?\d{2})$/)) {                          // temperatuur / dauwpunt
+      const temp = m[1].replace(/^M/, '-'), dew = m[2].replace(/^M/, '-');
+      r['Temp/dauw'] = `${parseInt(temp, 10)}\u00B0 / dauwpunt ${parseInt(dew, 10)}\u00B0`;
+    }
+    else if (m = t.match(/^Q(\d{4})$/)) { r.Luchtdruk = `${parseInt(m[1], 10)} hPa`; }
+    else if (m = t.match(/^A(\d{4})$/)) { r.Luchtdruk = `${(parseInt(m[1], 10) / 100).toFixed(2)} inHg`; }
+    else if (/^(\+|-|VC)?(MI|BC|DR|BL|SH|TS|FZ)?(DZ|RA|SN|SG|PL|GR|GS|IC|BR|FG|FU|VA|DU|SA|HZ|PO|SQ|FC|SS|DS)+$/.test(t)) {
+      weather.push(translateWeather(t));
+    }
+  }
+
+  if (clouds.length)  r.Bewolking = clouds.join(' / ');
+  if (weather.length) r.Weer      = weather.join(', ');
+  r._cat = flightCategory(visM, ceilFt);
+  return r;
+}
+
+/* Grove vliegconditie volgens de gangbare METAR-grenzen. */
+function flightCategory(visM, ceilFt) {
+  if (visM === null && ceilFt === Infinity) return null;   // te weinig info
+  const v = visM === null ? 10000 : visM;
+  if (v < 1500 || ceilFt < 500)  return { code:'LIFR', col:'var(--lifr)' };
+  if (v < 5000 || ceilFt < 1000) return { code:'IFR',  col:'var(--ifr)'  };
+  if (v < 8000 || ceilFt < 3000) return { code:'MVFR', col:'var(--mvfr)' };
+  return { code:'VFR', col:'var(--vfr)' };
+}
+
+/* ============================================================================
+   DATA OPHALEN  (via het doorgeef-luik, met vangnet)
+   ============================================================================ */
+async function fetchAllMetars(icaos) {
+  const apiUrl = `https://aviationweather.gov/api/data/metar?ids=${icaos.join(',')}&format=raw`;
+  const candidates = PROXIES.length ? PROXIES.map(fn => fn(apiUrl)) : [apiUrl];
+
+  let lastErr;
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('status ' + resp.status);
+      const text = await resp.text();
+      const map = {};
+      for (const line of text.split('\n')) {
+        const clean = line.trim();
+        if (!clean) continue;
+        let tk = clean.split(/\s+/);
+        if (tk[0] === 'METAR' || tk[0] === 'SPECI') tk = tk.slice(1);
+        map[tk[0]] = clean;
+      }
+      if (Object.keys(map).length) return map;   // gelukt
+      throw new Error('lege reactie');
+    } catch (e) { lastErr = e; /* volgende proxy proberen */ }
+  }
+  throw lastErr || new Error('onbereikbaar');
+}
+
+/* ============================================================================
+   STATUS + TEKENEN
+   ============================================================================ */
+const el = {
+  board:    document.getElementById('board'),
+  subject:  document.getElementById('subject'),
+  clock:    document.getElementById('clock'),
+  progress: document.getElementById('progress'),
+  rows:     document.getElementById('rows'),
+  status:   document.getElementById('status'),
+};
+
+let state = {};            // icao -> geparste METAR
+let subjectIndex = 0;
+let lastFetch = 0;
+let lastError = false;
+
+function utcHM(ms) {
+  const d = ms ? new Date(ms) : new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+async function refreshData() {
+  try {
+    const rawMap = await fetchAllMetars(AIRPORTS.map(a => a.icao));
+    const next = {};
+    for (const a of AIRPORTS) {
+      next[a.icao] = rawMap[a.icao]
+        ? parseMetar(rawMap[a.icao])
+        : { Wind:'geen data', Zicht:'-', Weer:'-', Bewolking:'-', 'Temp/dauw':'-', Luchtdruk:'-', _cat:null };
+    }
+    state = next;
+    lastFetch = Date.now();
+    lastError = false;
+  } catch (e) {
+    lastError = true;      // oude data blijft staan, we melden het onderaan
+  }
+  render();
+}
+
+function render() {
+  const subject = SUBJECTS[subjectIndex];
+  el.subject.textContent = subject;
+  el.clock.textContent = utcHM() + 'Z';
+
+  el.rows.innerHTML = '';
+  for (const a of AIRPORTS) {
+    const data = state[a.icao];
+    const val  = data ? data[subject] : null;
+    const cat  = data ? data._cat : null;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const who = document.createElement('div');
+    who.className = 'who';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    if (cat) { dot.style.background = cat.col; dot.style.color = cat.col; dot.title = cat.code; }
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = a.name;
+    const code = document.createElement('span'); code.className = 'code'; code.textContent = a.icao;
+    who.append(dot, name, code);
+
+    const value = document.createElement('div');
+    value.className = 'value' + (val ? '' : ' empty');
+    value.textContent = val || '...';
+
+    row.append(who, value);
+    el.rows.append(row);
+  }
+
+  if (lastError)      el.status.innerHTML = `<span class="err">bron onbereikbaar</span> \u00B7 laatste data ${lastFetch ? utcHM(lastFetch)+'Z' : 'nog geen'}`;
+  else if (lastFetch) el.status.textContent = `bijgewerkt ${utcHM(lastFetch)}Z`;
+  else                el.status.textContent = 'bezig met ophalen...';
+
+  // De "omklap"-animatie opnieuw aftrappen
+  el.board.classList.remove('flip');
+  void el.board.offsetWidth;          // forceert een herstart van de animatie
+  el.board.classList.add('flip');
+
+  // Voortgangsstreep resetten en opnieuw laten vollopen
+  const bar = el.progress.querySelector('span');
+  el.progress.classList.remove('run');
+  bar.style.transition = 'none';
+  void bar.offsetWidth;
+  bar.style.transition = `width ${SECONDS_PER_SUBJECT}s linear`;
+  el.progress.classList.add('run');
+}
+
+/* ============================================================================
+   DE MOTOR  (twee timers + tikken om door te spoelen)
+   ============================================================================ */
+function nextSubject() {
+  subjectIndex = (subjectIndex + 1) % SUBJECTS.length;
+  render();
+  resetSubjectTimer();
+}
+
+let subjectTimer;
+function resetSubjectTimer() {
+  clearInterval(subjectTimer);
+  subjectTimer = setInterval(() => {
+    subjectIndex = (subjectIndex + 1) % SUBJECTS.length;
+    render();
+  }, SECONDS_PER_SUBJECT * 1000);
+}
+
+// Elke minuut kijken of de data ouder is dan REFRESH_MINUTES
+setInterval(() => {
+  if (Date.now() - lastFetch >= REFRESH_MINUTES * 60 * 1000) refreshData();
+}, 60 * 1000);
+
+// Klok elke seconde bijwerken (goedkoop, houdt de tijd levend)
+setInterval(() => { el.clock.textContent = utcHM() + 'Z'; }, 1000);
+
+// Tikken op het scherm = meteen naar het volgende onderwerp
+el.board.addEventListener('click', nextSubject);
+
+// Startknal
+refreshData();
+resetSubjectTimer();
+</script>
+
+<script>
+/* De service worker registreren maakt de app installeerbaar en laat 'm
+   ook zonder internet opstarten. Faalt dit (bv. lokaal geopend), dan
+   werkt de ticker gewoon door - alleen het "installeren" doet het dan niet. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

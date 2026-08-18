@@ -1,126 +1,53 @@
 # METAR Ticker
 
-Toont het actuele vliegveldweer van meerdere luchthavens als een soort vertrekbord: per onderwerp (wind, zicht, bewolking, ...) een paar seconden in beeld, en dan door naar het volgende. Handig om op een tweede scherm of op je telefoon te laten draaien.
+Vliegveldweer voor meerdere luchthavens, weergegeven als een vertrekbord. De ticker loopt automatisch door de onderwerpen — wind, zicht, bewolking, temperatuur, luchtdruk — en toont elk een paar seconden. Handig op een tweede scherm of op je telefoon.
 
-De ticker haalt zogenoemde METAR's op — **MET**eorological **A**erodrome **R**eport, het standaard weerberichtje dat vliegvelden wereldwijd uitzenden — en vertaalt die cryptische regels naar gewoon Nederlands.
+De data komt uit METAR's (**MET**eorological **A**erodrome **R**eport), de standaard weerberichten van vliegvelden, en wordt vertaald naar leesbaar Nederlands. Een ruwe METAR als `EHAM 181025Z 24008KT 9999 FEW020 13/07 Q1026` wordt zo "wind uit 240°, 8 knopen, zicht 10 km of meer, licht bewolkt op 2000 voet, 13 graden, 1026 hectopascal".
 
-Zo'n ruwe METAR ziet er bijvoorbeeld zo uit: `EHAM 181025Z 24008KT 9999 FEW020 13/07 Q1026`. Voor de ingewijde één regel vol afkortingen; deze tool maakt er "wind uit 240°, 8 knopen, zicht 10 km of meer, licht bewolkt op 2000 voet, 13 graden, 1026 hectopascal" van.
+**Live demo Web:** `https://nickeledocus.github.io/METAR_Ticker/` &nbsp;·&nbsp; werkt in de browser en is te installeren als app.
 
-Er zijn **twee smaken** in deze repo, met dezelfde vertaallogica:
-
-- **Desktop** — een Windows-venster gebouwd met PowerShell, eventueel om te bouwen naar een `.exe`.
-- **Web** — één HTML-bestand dat in de browser draait en dat je als app op je telefoon of pc kunt installeren.
-
-## Screenshot
+## Screenshots
+Desktop
 <img width="2089" height="446" alt="image" src="https://github.com/user-attachments/assets/3293dad5-0496-4597-86d5-b1d92a07558b" />
 
-## Wat het doet
+Web
+<img width="1170" height="502" alt="image" src="https://github.com/user-attachments/assets/81443078-9539-42d3-a6ed-cd29f66f6743" />
+
+
+## Kenmerken
 
 - Toont meerdere luchthavens tegelijk, netjes onder elkaar.
-- Loopt automatisch door de onderwerpen heen (wind, zicht, weer, bewolking, temperatuur/dauwpunt, luchtdruk), elk een paar seconden in beeld.
-- Vertaalt de ruwe METAR-codes naar leesbaar Nederlands, inclusief windrichting, wolkentypes, weersverschijnselen en luchtdruk.
-- Ververst zichzelf op de achtergrond (METAR's veranderen ongeveer één keer per uur, dus vaak ophalen is nergens voor nodig).
-- Gratis databron, geen registratie en geen API-sleutel (API = **A**pplication **P**rogramming **I**nterface, de "stekker" waarmee de tool data ophaalt) nodig.
+- Vertaalt de ruwe METAR-codes naar leesbaar Nederlands: windrichting en -snelheid, zicht, weersverschijnselen, wolkentypes en luchtdruk.
+- Loopt automatisch door de onderwerpen; ververst zichzelf op de achtergrond.
+- Gratis databron, geen account en geen API-sleutel (API = **A**pplication **P**rogramming **I**nterface) nodig.
+- Twee smaken met dezelfde vertaallogica: een **webversie** (browser en telefoon) en een **desktopversie** (Windows).
 
-## Wat zit er in deze repo
+## Twee versies
 
-| Bestand | Waarvoor |
-|---|---|
-| `METAR_Ticker_WF.ps1` | De desktopversie (PowerShell + Windows Forms). |
-| `Builder.ps1` | Bouwt van de desktopversie een `.exe`. |
-| `index.html` | De volledige webversie in één bestand. |
-| `manifest.webmanifest` | Het "paspoort" van de web-app (naam, kleuren, icoon). |
-| `sw.js` | De service worker die de app installeerbaar maakt. |
-| `icons/` | De app-iconen. |
-
----
-
-# Desktopversie (Windows)
-
-## Vereisten
-
-- Windows (het venster is gebouwd met Windows Forms, de ingebouwde vensterbouwdoos van Windows).
-- Windows PowerShell 5.1 (standaard aanwezig op Windows) of PowerShell 7 op Windows.
-- Een internetverbinding, want de weerdata komt van een online bron.
-- Alleen nodig als je een `.exe` wilt bouwen: de PowerShell-module `ps2exe` (spreek uit: "PowerShell-to-exe"). Het bouwscript installeert die zo nodig zelf.
-
-## Snel starten (zonder te bouwen)
-
-Je kunt het gewoon als script draaien om te kijken of het bevalt:
-
-```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\METAR_Ticker_WF.ps1
-```
-
-`-ExecutionPolicy Bypass` zorgt dat Windows je eigen script niet blokkeert. Het venster verschijnt gecentreerd op je scherm; afsluiten doe je met het kruisje.
-
-## Instellingen
-
-Alle knoppen zitten bovenin `METAR_Ticker_WF.ps1`, in het blok `INSTELLINGEN`. Aanpassen, opslaan, opnieuw draaien (of opnieuw bouwen, zie hieronder).
-
-| Instelling | Standaard | Betekenis |
+| Versie | Voor wie | Bestand |
 |---|---|---|
-| `$airports` | Rotterdam (EHRD), Amsterdam (EHAM), Eindhoven (EHEH) | De luchthavens die getoond worden. Elke regel is een naam plus een ICAO-code. |
-| `$subjects` | Wind, Zicht, Weer, Bewolking, Temp/dauw, Luchtdruk | De onderwerpen die langskomen, in deze volgorde. |
-| `$secondsPerSubject` | `10` | Hoeveel seconden elk onderwerp in beeld blijft. |
-| `$refreshMinutes` | `10` | Hoe vaak nieuwe weerdata wordt opgehaald. |
-| `$fontName` | `Consolas` | Het lettertype in het venster. |
-| `$fontSize` | `14` | De lettergrootte. |
-| `$winWidth` | `1400` | Vensterbreedte in pixels. |
-| `$winHeight` | `300` | Vensterhoogte in pixels. |
-
-Een luchthaven toevoegen doe je door een regel bij te plakken in `$airports`. Je hebt de ICAO-code nodig — **I**nternational **C**ivil **A**viation **O**rganization, de viertekenige luchthavencode. Een paar Nederlandse:
-
-```powershell
-$airports = @(
-    [pscustomobject]@{ Name='Rotterdam'; Icao='EHRD' }
-    [pscustomobject]@{ Name='Amsterdam'; Icao='EHAM' }
-    [pscustomobject]@{ Name='Eindhoven'; Icao='EHEH' }
-    [pscustomobject]@{ Name='Groningen'; Icao='EHGG' }
-    [pscustomobject]@{ Name='Maastricht'; Icao='EHBK' }
-)
-```
-
-## Een `.exe` bouwen
-
-`Builder.ps1` bakt van je script een dubbelklikbaar programma (`METAR_Ticker.exe`), zodat je geen PowerShell-venster meer hoeft te openen. Pas eerst de twee padregels bovenin `Builder.ps1` aan naar jouw situatie:
-
-```powershell
-$bronScript = 'C:\wrk\METAR_Ticker\METAR_Ticker_WF.ps1'
-$doelExe    = 'C:\wrk\METAR_Ticker\METAR_Ticker.exe'
-```
-
-En draai dan:
-
-```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\Builder.ps1
-```
-
-Het bouwscript doet drie dingen: het installeert `ps2exe` eenmalig als die nog ontbreekt, het sluit een eventueel draaiende ticker af (anders zit het `.exe`-bestand op slot en kun je er niet overheen schrijven), en het bakt vervolgens een verse `.exe`.
-
-Belangrijk om te weten: `ps2exe` **bakt je script op het moment van bouwen volledig in de `.exe` in**. Er is daarna geen levende link meer met je `.ps1`.
-
-Zie de `.exe` als een gedrukt boek en je `.ps1` als het Word-document waaruit het gedrukt is. Corrigeer je een typefout in het Word-bestand, dan verandert het boek dat al op de plank staat niet mee — je moet een nieuwe druk laten maken.
-
-Je werkwijze wordt daarom: `METAR_Ticker_WF.ps1` aanpassen (bijvoorbeeld een luchthaven erbij), `Builder.ps1` draaien, klaar. Elke wijziging betekent één keer opnieuw bouwen.
-
-## Automatisch opstarten (optioneel)
-
-Wil je 'm elke keer bij het aanzetten van je computer laten starten, zet dan een snelkoppeling naar `METAR_Ticker.exe` in je opstartmap. Druk op Windows-toets + R, typ `shell:startup`, druk op Enter, en sleep er een snelkoppeling naartoe.
+| **Web** | Iedereen — draait in de browser, installeerbaar als app op telefoon en pc | `index.html` |
+| **Desktop** | Windows-gebruikers die een los venster of een `.exe` willen | `METAR_Ticker_WF.ps1` |
 
 ---
 
-# Webversie (browser & telefoon)
+## Webversie
 
-Dezelfde ticker, maar dan als één `index.html`-bestand dat in elke moderne browser draait — op je pc én je telefoon. Tikken op het scherm spoelt meteen door naar het volgende onderwerp.
+### Gebruiken
 
-## Even proberen
+Open de [live demo](#) in je browser. Tik op het scherm om meteen naar het volgende onderwerp te springen.
 
-Je kunt `index.html` lokaal openen om te kijken of het bevalt. Voor de installeerbare app-versie en de betrouwbaarste werking zet je 'm online via GitHub Pages (zie verderop) — dat is gratis en zo geregeld.
+### Installeren als app
 
-## Instellingen
+De webversie is een PWA (**P**rogressive **W**eb **A**pp) en kan als echte app worden geïnstalleerd — met eigen icoon en schermvullend, zonder browserbalk.
 
-Alle knoppen zitten bovenin `index.html`, in het blok `INSTELLINGEN`:
+- **Android (Chrome):** menu (drie puntjes) → *App installeren* of *Toevoegen aan startscherm*.
+- **iPhone (Safari):** deel-icoon → *Zet op beginscherm*.
+- **Desktop (Chrome/Edge):** klik op het installatie-icoon in de adresbalk → *Installeren*.
+
+### Instellingen
+
+Bovenin `index.html`, in het blok `INSTELLINGEN`. Aanpassen, opslaan, pagina verversen — er hoeft niets gebouwd te worden.
 
 | Instelling | Standaard | Betekenis |
 |---|---|---|
@@ -130,78 +57,114 @@ Alle knoppen zitten bovenin `index.html`, in het blok `INSTELLINGEN`:
 | `REFRESH_MINUTES` | `10` | Hoe vaak nieuwe data wordt opgehaald. |
 | `PROXIES` | twee stuks | Het doorgeef-luik voor de weerdata (zie hieronder). |
 
-Fijn verschil met de desktopversie: hier hoef je **niets te bouwen**. Aanpassen, opslaan, pagina verversen — klaar.
+Luchthavens toevoegen doe je met hun ICAO-code (**I**nternational **C**ivil **A**viation **O**rganization). Een paar Nederlandse: `EHRD` Rotterdam, `EHAM` Amsterdam, `EHEH` Eindhoven, `EHGG` Groningen, `EHBK` Maastricht.
 
-## Waarom een "proxy"? (de CORS-omweg)
+Het gekleurde bolletje per luchthaven geeft de globale vliegconditie aan volgens de gangbare METAR-grenzen: groen (VFR, ruim zicht) tot magenta (LIFR, zeer slecht).
 
-De weerdienst staat het niet toe dat een browser zijn data rechtstreeks ophaalt. Dat heet CORS — **C**ross-**O**rigin **R**esource **S**haring, de regel waarmee een browser bepaalt of hij data van andermans server mag lezen — en die staat bij deze bron dicht. De webversie vraagt de data daarom niet zelf op, maar laat een tussenpartij (een "proxy") het even ophalen en doorgeven.
+### Zelf hosten (GitHub Pages)
 
-Zie zo'n proxy als een conciërge bij de balie. Jij mag zelf niet achter in het magazijn komen, maar je vraagt het de conciërge, die loopt erheen, pakt het pakketje en geeft het aan jou over de balie. Jij krijgt precies wat je wilde; je bent alleen niet zélf naar achteren gelopen.
+De webversie is één statische map, dus elke statische host werkt. Met GitHub Pages:
 
-Er staan er twee ingesteld als vangnet: valt de eerste weg, dan pakt de app automatisch de tweede. Het zijn gratis diensten van derden, dus ze kunnen af en toe traag zijn of plat liggen. Voor een persoonlijk tickertje is dat prima; je kunt ze bovenin bij `PROXIES` zo omwisselen, of de lijst leegmaken (`[]`) als je ooit een bron gebruikt die CORS wél toestaat of je eigen proxy draait.
+1. Zorg dat `index.html`, `manifest.webmanifest`, `sw.js` en de map `icons/` in de repo staan (zie [mappenindeling](#mappenindeling)).
+2. Ga naar **Settings → Pages**, kies *Deploy from a branch*, je hoofdbranch en de map `/ (root)`, en sla op.
+3. Na een minuut of twee is de app bereikbaar op `https://<gebruiker>.github.io/<repo>/`.
 
-## Als app installeren (PWA)
+De app gebruikt bewust relatieve paden, zodat hij ook onder het subpad van een Pages-adres blijft werken.
 
-Een PWA — **P**rogressive **W**eb **A**pp — is een webpagina die zich als een geïnstalleerde app gedraagt: eigen icoon op je startscherm, schermvullend, zonder browserbalk eromheen. Deze repo bevat alles wat daarvoor nodig is (`manifest.webmanifest`, `sw.js` en de iconen).
+### Over de databron en CORS
 
-Zet de app online met GitHub Pages:
-
-1. Zet deze bestanden in je repo (zie de mappenindeling hieronder).
-2. Ga in je repo naar **Settings → Pages** en kies als bron je hoofdbranch (root). GitHub geeft je dan een `https://...`-adres.
-3. Open dat adres op je telefoon in Chrome, tik op het menu en kies **"Toevoegen aan startscherm"** (op de iPhone doe je dit via het deel-icoon in Safari).
-
-Je krijgt dan een icoon dat de ticker schermvullend opent. Dat GitHub Pages een echt `https://`-adres geeft, is precies wat een installeerbare app nodig heeft — en meteen loopt de proxy er ook betrouwbaarder overheen dan bij een lokaal geopend bestand.
-
-### Mappenindeling in de repo
-
-De web-app gebruikt bewust relatieve paden, zodat hij ook werkt onder het subpad van een GitHub Pages-adres. Houd deze indeling aan:
-
-```
-/ (repo-root)
-├─ index.html
-├─ manifest.webmanifest
-├─ sw.js
-├─ icons/
-│  ├─ icon-192.png
-│  ├─ icon-512.png
-│  └─ icon-maskable-512.png
-├─ METAR_Ticker_WF.ps1
-├─ Builder.ps1
-└─ README.md
-```
-
-> Wijzig je de web-app later? Hoog dan het versienummer in `sw.js` op (bijvoorbeeld `metar-ticker-v1` → `v2`). Zo weet de service worker dat hij de oude, onthouden versie mag weggooien en de verse moet laden.
+De weerbron (aviationweather.gov) staat geen directe browsertoegang toe — dat heet CORS (**C**ross-**O**rigin **R**esource **S**haring). De webversie haalt de data daarom op via een publieke proxy die als tussenpersoon fungeert. Er staan er twee ingesteld als vangnet; je kunt ze bovenin bij `PROXIES` wijzigen of leegmaken als je een eigen proxy of een CORS-vriendelijke bron gebruikt.
 
 ---
 
-## Hoe het werkt (onder de motorkap)
+## Desktopversie (Windows)
 
-De data komt van de gratis Data-API van aviationweather.gov (de Amerikaanse luchtvaartweerdienst). Alle luchthavens worden in één verzoek opgehaald — netjes tegenover de gratis server.
+Een venster gebouwd met PowerShell en Windows Forms. Vereist Windows met Windows PowerShell 5.1 (standaard aanwezig) of PowerShell 7.
 
-De ruwe METAR wordt daarna stukje voor stukje ontcijferd met reguliere expressies (regex, een taaltje om patronen in tekst te herkennen). Elk METAR-groepje heeft een vaste vorm, en op basis van die vorm weet de tool wat het betekent.
+### Snel starten
 
-Het rondlopen door de onderwerpen gebeurt met timers in plaats van een wachtlus. Dat moet ook wel: een venster of pagina moet tussendoor kunnen "ademen" om op je te reageren en zichzelf opnieuw te tekenen. Een gewone wachtlus zou alles laten bevriezen.
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\METAR_Ticker_WF.ps1
+```
 
-Zie het als een kok met twee kookwekkers op het aanrecht. Hij staat niet bevroren naar één pan te staren, maar loopt rond en doet pas iets zodra er een wekker afgaat — ondertussen kan hij nog steeds opendoen. De ene wekker schuift naar het volgende onderwerp; de andere kijkt af en toe of de weerdata ververst moet worden.
+### Instellingen
 
-## Goed om te weten
+Bovenin `METAR_Ticker_WF.ps1`, in het blok `INSTELLINGEN`.
 
-- **Het °-teken en tekencodering (desktop).** In de PowerShell-versie wordt het graden-teken opgebouwd via `[char]176` in plaats van letterlijk in het bestand te staan. Dat voorkomt het klassieke `18Â°`-probleem, waarbij het teken verhaspeld raakt door een verschil in tekencodering (encoding). In de webversie speelt dit niet: die staat als UTF-8 ingesteld, dus daar mag het °-teken gewoon letterlijk in.
-- **Even een minibevriezinkje bij het verversen (desktop).** Op het moment dat nieuwe data wordt opgehaald staat het venster héél kort stil, omdat ophalen en tekenen op dezelfde lijn gebeuren. Bij één keer per tien minuten merk je dat nauwelijks.
-- **De statusbolletjes (web).** In de webversie kleurt een bolletje per luchthaven van groen (VFR, ruim zicht) tot magenta (LIFR, zeer slecht), volgens de gangbare METAR-grenzen voor vliegcondities. Dat is een grove inschatting op basis van zicht en bewolking, geen officiële classificatie.
+| Instelling | Standaard | Betekenis |
+|---|---|---|
+| `$airports` | Rotterdam, Amsterdam, Eindhoven | Luchthavens (naam + ICAO-code). |
+| `$subjects` | Wind, Zicht, Weer, Bewolking, Temp/dauw, Luchtdruk | De onderwerpen die langskomen. |
+| `$secondsPerSubject` | `10` | Seconden per onderwerp. |
+| `$refreshMinutes` | `10` | Hoe vaak nieuwe data wordt opgehaald. |
+| `$fontName` / `$fontSize` | `Consolas` / `14` | Lettertype en -grootte. |
+| `$winWidth` / `$winHeight` | `1400` / `300` | Vensterafmeting in pixels. |
 
-## Databron & dank
+### Een `.exe` bouwen (optioneel)
 
-Weerdata is afkomstig van [Aviation Weather Center](https://aviationweather.gov/) (National Weather Service, VS). Gebruik de bron met mate: het is een gratis publieke dienst, dus overspoel 'm niet met verzoeken.
+`Builder.ps1` maakt met de module [`ps2exe`](https://github.com/MScholtes/PS2EXE) een dubbelklikbaar programma. Pas eerst de twee padregels bovenin `Builder.ps1` aan naar je eigen locatie en draai het dan:
 
-De desktopversie leunt bij het bouwen op de [`ps2exe`](https://github.com/MScholtes/PS2EXE)-module van Markus Scholtes. De webversie haalt de data op via een publieke CORS-proxy ([allorigins](https://allorigins.win/) of [corsproxy.io](https://corsproxy.io/)).
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\Builder.ps1
+```
 
-## Ideeën voor later
+`ps2exe` bakt het script op dat moment volledig in de `.exe` in: na een wijziging in het bronscript moet je opnieuw bouwen.
 
-- Eén luchthaven tegelijk volledig in beeld (eerst Rotterdam al zijn onderwerpen, dán Amsterdam), als alternatief voor het huidige gesynchroniseerde bord.
-- Een mist-waarschuwing wanneer temperatuur en dauwpunt dicht bij elkaar liggen.
-- Instellingen in een los tekstbestandje (desktop), zodat je luchthavens kunt wisselen zonder opnieuw te bouwen.
+---
+
+## Hoe het werkt
+
+De ticker haalt alle luchthavens in één verzoek op bij de Data-API van aviationweather.gov en ontcijfert elke ruwe METAR met reguliere expressies (regex): elk METAR-groepje heeft een vaste vorm, en op basis daarvan wordt het vertaald. Het doorlopen van de onderwerpen en het verversen gebeurt met timers, zodat de weergave soepel blijft reageren.
+
+<a name="mappenindeling"></a>
+
+## Bestanden in de repo
+
+```
+/ (repo-root)
+├─ index.html               # webversie (compleet in één bestand)
+├─ manifest.webmanifest     # app-gegevens voor de PWA
+├─ sw.js                    # service worker (installeerbaar + offline opstarten)
+├─ icons/                   # app-iconen (192, 512, maskable)
+├─ METAR_Ticker_WF.ps1      # desktopversie (PowerShell)
+├─ Builder.ps1              # bouwt de desktop-.exe
+└─ README.md
+```
+
+## Databron & credits
+
+Weerdata: [Aviation Weather Center](https://aviationweather.gov/) (National Weather Service, VS) — een gratis publieke dienst; gebruik hem met mate. De webversie gebruikt een publieke CORS-proxy ([allorigins](https://allorigins.win/) of [corsproxy.io](https://corsproxy.io/)). De desktop-`.exe` wordt gebouwd met [`ps2exe`](https://github.com/MScholtes/PS2EXE) van Markus Scholtes.
+
+## Roadmap
+
+- Eén luchthaven tegelijk volledig in beeld, als alternatief voor het gesynchroniseerde bord.
+- Mist-waarschuwing wanneer temperatuur en dauwpunt dicht bij elkaar liggen.
+- Externe instellingen voor de desktopversie, zodat luchthavens gewisseld kunnen worden zonder opnieuw te bouwen.
+
+## Licentie
+MIT License
+
+Copyright (c) 2026 Nick Scheffers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 
 ## Disclaimer
 
-Deze tool toont uitsluitend wat de vliegveldsensoren rapporteren. Of elk stipje dat als "vogel" op de radar verschijnt werkelijk een vogel is, en niet gewoon keurig geregistreerde overheidsapparatuur, laat de METAR wijselijk in het midden. Vlieg — en interpreteer — dus op eigen risico.
+Niet gebruiken voor vluchtvoorbereiding of beslissingen tijdens de vlucht — raadpleeg daarvoor altijd officiële, gecertificeerde weerbronnen. Deze tool toont uitsluitend wat de vliegveldsensoren rapporteren. En of elk stipje dat als "vogel" op de radar verschijnt werkelijk een vogel is en niet gewoon keurig geregistreerde overheidsapparatuur, laat de METAR wijselijk in het midden.

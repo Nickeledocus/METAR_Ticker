@@ -113,13 +113,8 @@ Het bouwen leunt op de [`ps2exe`](https://github.com/MScholtes/PS2EXE)-module va
 ## Ideeën voor later
 
 - Eén luchthaven tegelijk volledig in beeld (eerst Rotterdam al zijn onderwerpen, dán Amsterdam), als alternatief voor het huidige gesynchroniseerde bord.
-- Vloeiend verversen zonder het minibevriezinkje.
 - Een mist-waarschuwing wanneer temperatuur en dauwpunt dicht bij elkaar liggen.
 - Instellingen in een los tekstbestandje, zodat je luchthavens kunt wisselen zonder opnieuw te bouwen.
-
-## Licentie
-
-Nog geen licentie gekozen. Voor een persoonlijk projectje dat je deelt is [MIT](https://choosealicense.com/licenses/mit/) een prima, simpele keuze — zet dan een `LICENSE`-bestand in de repo.
 
 ## Disclaimer
 

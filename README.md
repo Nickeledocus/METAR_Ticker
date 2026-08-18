@@ -1,12 +1,18 @@
 # METAR Ticker
 
-Een klein Windows-bureaubladvenster dat het actuele vliegveldweer van meerdere luchthavens laat zien als een soort vertrekbord: per onderwerp (wind, zicht, bewolking, ...) een paar seconden in beeld, en dan door naar het volgende. Handig om op een tweede scherm te laten draaien.
+Toont het actuele vliegveldweer van meerdere luchthavens als een soort vertrekbord: per onderwerp (wind, zicht, bewolking, ...) een paar seconden in beeld, en dan door naar het volgende. Handig om op een tweede scherm of op je telefoon te laten draaien.
 
 De ticker haalt zogenoemde METAR's op — **MET**eorological **A**erodrome **R**eport, het standaard weerberichtje dat vliegvelden wereldwijd uitzenden — en vertaalt die cryptische regels naar gewoon Nederlands.
 
 Zo'n ruwe METAR ziet er bijvoorbeeld zo uit: `EHAM 181025Z 24008KT 9999 FEW020 13/07 Q1026`. Voor de ingewijde één regel vol afkortingen; deze tool maakt er "wind uit 240°, 8 knopen, zicht 10 km of meer, licht bewolkt op 2000 voet, 13 graden, 1026 hectopascal" van.
 
-> Zet je eigen schermafbeelding in een mapje `docs/` en pas de regel hierboven aan, of haal 'm weg.
+Er zijn **twee smaken** in deze repo, met dezelfde vertaallogica:
+
+- **Desktop** — een Windows-venster gebouwd met PowerShell, eventueel om te bouwen naar een `.exe`.
+- **Web** — één HTML-bestand dat in de browser draait en dat je als app op je telefoon of pc kunt installeren.
+
+## Screenshot
+<img width="2089" height="446" alt="image" src="https://github.com/user-attachments/assets/3293dad5-0496-4597-86d5-b1d92a07558b" />
 
 ## Wat het doet
 
@@ -14,12 +20,22 @@ Zo'n ruwe METAR ziet er bijvoorbeeld zo uit: `EHAM 181025Z 24008KT 9999 FEW020 1
 - Loopt automatisch door de onderwerpen heen (wind, zicht, weer, bewolking, temperatuur/dauwpunt, luchtdruk), elk een paar seconden in beeld.
 - Vertaalt de ruwe METAR-codes naar leesbaar Nederlands, inclusief windrichting, wolkentypes, weersverschijnselen en luchtdruk.
 - Ververst zichzelf op de achtergrond (METAR's veranderen ongeveer één keer per uur, dus vaak ophalen is nergens voor nodig).
-- Draait als los venster met een eigen lettertype, grootte en kleuren — geen zwart consolescherm.
-- Gratis databron, geen registratie en geen API-sleutel (API = **A**pplication **P**rogramming **I**nterface, de "stekker" waarmee het script data ophaalt) nodig.
+- Gratis databron, geen registratie en geen API-sleutel (API = **A**pplication **P**rogramming **I**nterface, de "stekker" waarmee de tool data ophaalt) nodig.
 
-## Screenshot
-<img width="2089" height="446" alt="image" src="https://github.com/user-attachments/assets/3293dad5-0496-4597-86d5-b1d92a07558b" />
+## Wat zit er in deze repo
 
+| Bestand | Waarvoor |
+|---|---|
+| `METAR_Ticker_WF.ps1` | De desktopversie (PowerShell + Windows Forms). |
+| `Builder.ps1` | Bouwt van de desktopversie een `.exe`. |
+| `index.html` | De volledige webversie in één bestand. |
+| `manifest.webmanifest` | Het "paspoort" van de web-app (naam, kleuren, icoon). |
+| `sw.js` | De service worker die de app installeerbaar maakt. |
+| `icons/` | De app-iconen. |
+
+---
+
+# Desktopversie (Windows)
 
 ## Vereisten
 
@@ -92,33 +108,99 @@ Je werkwijze wordt daarom: `METAR_Ticker_WF.ps1` aanpassen (bijvoorbeeld een luc
 
 Wil je 'm elke keer bij het aanzetten van je computer laten starten, zet dan een snelkoppeling naar `METAR_Ticker.exe` in je opstartmap. Druk op Windows-toets + R, typ `shell:startup`, druk op Enter, en sleep er een snelkoppeling naartoe.
 
+---
+
+# Webversie (browser & telefoon)
+
+Dezelfde ticker, maar dan als één `index.html`-bestand dat in elke moderne browser draait — op je pc én je telefoon. Tikken op het scherm spoelt meteen door naar het volgende onderwerp.
+
+## Even proberen
+
+Je kunt `index.html` lokaal openen om te kijken of het bevalt. Voor de installeerbare app-versie en de betrouwbaarste werking zet je 'm online via GitHub Pages (zie verderop) — dat is gratis en zo geregeld.
+
+## Instellingen
+
+Alle knoppen zitten bovenin `index.html`, in het blok `INSTELLINGEN`:
+
+| Instelling | Standaard | Betekenis |
+|---|---|---|
+| `AIRPORTS` | Rotterdam, Amsterdam, Eindhoven | De luchthavens (naam + ICAO-code). |
+| `SUBJECTS` | Wind, Zicht, Weer, Bewolking, Temp/dauw, Luchtdruk | De onderwerpen die langskomen. |
+| `SECONDS_PER_SUBJECT` | `8` | Seconden per onderwerp in beeld. |
+| `REFRESH_MINUTES` | `10` | Hoe vaak nieuwe data wordt opgehaald. |
+| `PROXIES` | twee stuks | Het doorgeef-luik voor de weerdata (zie hieronder). |
+
+Fijn verschil met de desktopversie: hier hoef je **niets te bouwen**. Aanpassen, opslaan, pagina verversen — klaar.
+
+## Waarom een "proxy"? (de CORS-omweg)
+
+De weerdienst staat het niet toe dat een browser zijn data rechtstreeks ophaalt. Dat heet CORS — **C**ross-**O**rigin **R**esource **S**haring, de regel waarmee een browser bepaalt of hij data van andermans server mag lezen — en die staat bij deze bron dicht. De webversie vraagt de data daarom niet zelf op, maar laat een tussenpartij (een "proxy") het even ophalen en doorgeven.
+
+Zie zo'n proxy als een conciërge bij de balie. Jij mag zelf niet achter in het magazijn komen, maar je vraagt het de conciërge, die loopt erheen, pakt het pakketje en geeft het aan jou over de balie. Jij krijgt precies wat je wilde; je bent alleen niet zélf naar achteren gelopen.
+
+Er staan er twee ingesteld als vangnet: valt de eerste weg, dan pakt de app automatisch de tweede. Het zijn gratis diensten van derden, dus ze kunnen af en toe traag zijn of plat liggen. Voor een persoonlijk tickertje is dat prima; je kunt ze bovenin bij `PROXIES` zo omwisselen, of de lijst leegmaken (`[]`) als je ooit een bron gebruikt die CORS wél toestaat of je eigen proxy draait.
+
+## Als app installeren (PWA)
+
+Een PWA — **P**rogressive **W**eb **A**pp — is een webpagina die zich als een geïnstalleerde app gedraagt: eigen icoon op je startscherm, schermvullend, zonder browserbalk eromheen. Deze repo bevat alles wat daarvoor nodig is (`manifest.webmanifest`, `sw.js` en de iconen).
+
+Zet de app online met GitHub Pages:
+
+1. Zet deze bestanden in je repo (zie de mappenindeling hieronder).
+2. Ga in je repo naar **Settings → Pages** en kies als bron je hoofdbranch (root). GitHub geeft je dan een `https://...`-adres.
+3. Open dat adres op je telefoon in Chrome, tik op het menu en kies **"Toevoegen aan startscherm"** (op de iPhone doe je dit via het deel-icoon in Safari).
+
+Je krijgt dan een icoon dat de ticker schermvullend opent. Dat GitHub Pages een echt `https://`-adres geeft, is precies wat een installeerbare app nodig heeft — en meteen loopt de proxy er ook betrouwbaarder overheen dan bij een lokaal geopend bestand.
+
+### Mappenindeling in de repo
+
+De web-app gebruikt bewust relatieve paden, zodat hij ook werkt onder het subpad van een GitHub Pages-adres. Houd deze indeling aan:
+
+```
+/ (repo-root)
+├─ index.html
+├─ manifest.webmanifest
+├─ sw.js
+├─ icons/
+│  ├─ icon-192.png
+│  ├─ icon-512.png
+│  └─ icon-maskable-512.png
+├─ METAR_Ticker_WF.ps1
+├─ Builder.ps1
+└─ README.md
+```
+
+> Wijzig je de web-app later? Hoog dan het versienummer in `sw.js` op (bijvoorbeeld `metar-ticker-v1` → `v2`). Zo weet de service worker dat hij de oude, onthouden versie mag weggooien en de verse moet laden.
+
+---
+
 ## Hoe het werkt (onder de motorkap)
 
 De data komt van de gratis Data-API van aviationweather.gov (de Amerikaanse luchtvaartweerdienst). Alle luchthavens worden in één verzoek opgehaald — netjes tegenover de gratis server.
 
-De ruwe METAR wordt daarna stukje voor stukje ontcijferd met reguliere expressies (regex, een taaltje om patronen in tekst te herkennen). Elk METAR-groepje heeft een vaste vorm, en op basis van die vorm weet het script wat het betekent.
+De ruwe METAR wordt daarna stukje voor stukje ontcijferd met reguliere expressies (regex, een taaltje om patronen in tekst te herkennen). Elk METAR-groepje heeft een vaste vorm, en op basis van die vorm weet de tool wat het betekent.
 
-Het rondlopen door de onderwerpen gebeurt met twee timers in plaats van een wachtlus. Dat moet ook wel: een venster moet tussendoor kunnen "ademen" om op je te reageren en zichzelf opnieuw te tekenen. Een gewone wachtlus zou het venster laten bevriezen.
+Het rondlopen door de onderwerpen gebeurt met timers in plaats van een wachtlus. Dat moet ook wel: een venster of pagina moet tussendoor kunnen "ademen" om op je te reageren en zichzelf opnieuw te tekenen. Een gewone wachtlus zou alles laten bevriezen.
 
-Zie het als een kok met twee kookwekkers op het aanrecht. Hij staat niet bevroren naar één pan te staren, maar loopt rond en doet pas iets zodra er een wekker afgaat — ondertussen kan hij nog steeds opendoen. De ene wekker schuift elke paar seconden naar het volgende onderwerp; de andere kijkt af en toe of de weerdata al ververst moet worden.
+Zie het als een kok met twee kookwekkers op het aanrecht. Hij staat niet bevroren naar één pan te staren, maar loopt rond en doet pas iets zodra er een wekker afgaat — ondertussen kan hij nog steeds opendoen. De ene wekker schuift naar het volgende onderwerp; de andere kijkt af en toe of de weerdata ververst moet worden.
 
 ## Goed om te weten
 
-- **Het °-teken en tekencodering.** Het graden-teken wordt in de code opgebouwd via `[char]176` in plaats van letterlijk in het bestand te staan. Dat voorkomt het klassieke `18Â°`-probleem, waarbij het teken verhaspeld raakt door een verschil in tekencodering (encoding) tussen opslaan en inlezen. Zo overleeft het teken ook het door `ps2exe` halen zonder gedoe.
-- **Even een minibevriezinkje bij het verversen.** Op het moment dat nieuwe data wordt opgehaald staat het venster héél kort stil (een fractie van een seconde), omdat ophalen en tekenen op dezelfde lijn gebeuren. Bij één keer per tien minuten merk je dat nauwelijks. Wil je het écht vloeiend, dan is het ophalen op een aparte werklijn (een background job of runspace) een mooi vervolgstapje.
-- **Waarom geen browserversie?** De weerdienst-server stuurt geen CORS-toestemming mee — **C**ross-**O**rigin **R**esource **S**haring, de regel waarmee een browser bepaalt of hij data van andermans server mag ophalen. Een browser zou de data dus weigeren. PowerShell heeft daar geen last van, want dat is een eigen client en geen browser.
+- **Het °-teken en tekencodering (desktop).** In de PowerShell-versie wordt het graden-teken opgebouwd via `[char]176` in plaats van letterlijk in het bestand te staan. Dat voorkomt het klassieke `18Â°`-probleem, waarbij het teken verhaspeld raakt door een verschil in tekencodering (encoding). In de webversie speelt dit niet: die staat als UTF-8 ingesteld, dus daar mag het °-teken gewoon letterlijk in.
+- **Even een minibevriezinkje bij het verversen (desktop).** Op het moment dat nieuwe data wordt opgehaald staat het venster héél kort stil, omdat ophalen en tekenen op dezelfde lijn gebeuren. Bij één keer per tien minuten merk je dat nauwelijks.
+- **De statusbolletjes (web).** In de webversie kleurt een bolletje per luchthaven van groen (VFR, ruim zicht) tot magenta (LIFR, zeer slecht), volgens de gangbare METAR-grenzen voor vliegcondities. Dat is een grove inschatting op basis van zicht en bewolking, geen officiële classificatie.
 
 ## Databron & dank
 
 Weerdata is afkomstig van [Aviation Weather Center](https://aviationweather.gov/) (National Weather Service, VS). Gebruik de bron met mate: het is een gratis publieke dienst, dus overspoel 'm niet met verzoeken.
 
-Het bouwen leunt op de [`ps2exe`](https://github.com/MScholtes/PS2EXE)-module van Markus Scholtes.
+De desktopversie leunt bij het bouwen op de [`ps2exe`](https://github.com/MScholtes/PS2EXE)-module van Markus Scholtes. De webversie haalt de data op via een publieke CORS-proxy ([allorigins](https://allorigins.win/) of [corsproxy.io](https://corsproxy.io/)).
 
 ## Ideeën voor later
 
 - Eén luchthaven tegelijk volledig in beeld (eerst Rotterdam al zijn onderwerpen, dán Amsterdam), als alternatief voor het huidige gesynchroniseerde bord.
 - Een mist-waarschuwing wanneer temperatuur en dauwpunt dicht bij elkaar liggen.
-- Instellingen in een los tekstbestandje, zodat je luchthavens kunt wisselen zonder opnieuw te bouwen.
+- Instellingen in een los tekstbestandje (desktop), zodat je luchthavens kunt wisselen zonder opnieuw te bouwen.
 
 ## Disclaimer
 

@@ -17,6 +17,10 @@ Zo'n ruwe METAR ziet er bijvoorbeeld zo uit: `EHAM 181025Z 24008KT 9999 FEW020 1
 - Draait als los venster met een eigen lettertype, grootte en kleuren — geen zwart consolescherm.
 - Gratis databron, geen registratie en geen API-sleutel (API = **A**pplication **P**rogramming **I**nterface, de "stekker" waarmee het script data ophaalt) nodig.
 
+## Screenshot
+<img width="2089" height="446" alt="image" src="https://github.com/user-attachments/assets/3293dad5-0496-4597-86d5-b1d92a07558b" />
+
+
 ## Vereisten
 
 - Windows (het venster is gebouwd met Windows Forms, de ingebouwde vensterbouwdoos van Windows).
